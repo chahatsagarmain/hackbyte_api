@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny , IsAuthenticated
 from rest_framework.parsers import FormParser , MultiPartParser
 from rest_framework.response import Response
 from rest_framework import status
+from .models import PDF
 #temporary method for unique ids for pdf storing
 import uuid 
 import os
@@ -12,7 +13,7 @@ from .utils import parse_pdf , text_splitter
 class UploadView(APIView):
     
     #Allow any for now 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     parser_classes = [FormParser,MultiPartParser]
     
     def post(self , request , format = None):
@@ -27,7 +28,7 @@ class UploadView(APIView):
         if filename.split('.')[-1] != 'pdf':
             return Response(data = 'file uploaded is not pdf', status=status.HTTP_400_BAD_REQUEST)
 
-        file_id = uuid.uuid4()
+        file_id = PDF.objects.create(uploaded_by = request.user).id
 
         with open(f"./uploads/{file_id}.pdf",'wb+') as save_file:
             save_file.write(file.read())
@@ -51,7 +52,7 @@ class UploadView(APIView):
         
 class ParserView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self , request , format = None):
         
