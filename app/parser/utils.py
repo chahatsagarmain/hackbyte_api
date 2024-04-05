@@ -1,5 +1,9 @@
 import pdfplumber
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+import boto3
+import os
+
+s3_client = boto3.client('s3' , region_name=os.getenv("region"))
 
 def parse_pdf(pdf_id : str) -> str:
     
@@ -20,4 +24,5 @@ def text_splitter(raw_text : str):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000 , chunk_overlap = 0)
     splitted_text = text_splitter.split_text(raw_text)
     #deal with chroma here 
-    
+
+# def upload_pdf()

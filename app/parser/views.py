@@ -1,11 +1,10 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny , IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import FormParser , MultiPartParser
 from rest_framework.response import Response
 from rest_framework import status
 from .models import PDF
 #temporary method for unique ids for pdf storing
-import uuid 
 import os
 import json
 from .utils import parse_pdf , text_splitter
@@ -45,6 +44,13 @@ class UploadView(APIView):
         if not os.path.exists(f"./uploads/{pdf_id}.pdf"):
             return Response({"message" : "pdf does not exist"} , status=status.HTTP_404_NOT_FOUND)
         
+        pdf = PDF.objects.get(id = pdf_id)
+        
+        if not pdf :
+            return Response({"message" : "no pdf with this id "} , status=status.HTTP_404_NOT_FOUND)
+        
+        pdf.delete()
+ 
         os.remove(f"./uploads/{pdf_id}.pdf")
         
         return Response({"message" : "pdf deleted"})        
