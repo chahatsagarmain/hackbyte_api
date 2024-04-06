@@ -35,7 +35,9 @@ SECRET_KEY = 'django-insecure-6prm0wjt)fply$z!cdz&_&b78ga1x0_i6sgnp$amjr-on2^+e&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "*"
+]
 
 
 # Application definition
@@ -50,10 +52,18 @@ INSTALLED_APPS = [
     'rest_framework',
     'parser',
     'authentication_app',
-    'crud'
+    'crud',
+    'chat',
+    'rest_framework.authtoken', 
+    'corsheaders',# add this
+
 ]
 
+
+
 MIDDLEWARE = [
+        'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -90,10 +100,9 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -141,3 +150,10 @@ AUTH_USER_MODEL = "authentication_app.CustomUser"
 AUTHENTICATION_BACKENDS = [
     'authentication_app.backends.EmailBackend'
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # add this
+    ]
+}
+CORS_ALLOW_ALL_ORIGINS = True
