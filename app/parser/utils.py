@@ -2,8 +2,9 @@ import pdfplumber
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import boto3
 import os
+from botocore import client
 
-s3_client = boto3.client('s3' , region_name=os.getenv("region"))
+expiration = 60 * 60 * 60 
 
 def parse_pdf(pdf_id : str) -> str:
     
@@ -25,4 +26,34 @@ def text_splitter(raw_text : str):
     splitted_text = text_splitter.split_text(raw_text)
     #deal with chroma here 
 
-# def upload_pdf()
+def get_presigned_url(file_id):
+    print(os.getenv("region"))
+    s3_client = boto3.client('s3' , region_name=os.getenv("region") , config= client.Config(signature_version='s3v4'))
+
+    global expiration
+    
+    print(str(file_id) + ".pdf")
+    
+    try:
+        response = s3_client.generate_presigned_url('get_object',
+                                                    Params={'Bucket': "hackbyte-bucket",
+                                                            'Key': str(file_id) + ".pdf"},
+                                                    ExpiresIn=expiration,
+                                                    )
+    except Exception as e:
+        return None
+    
+    return response
+
+def upload_pdf(file_id):
+    
+    s3_client = boto3.client('s3' , region_name=os.getenv("region") , config= client.Config(signature_version='s3v4'))
+    file_name = str(file_id) + ".pdf"
+        
+    try:
+        s3_client.upload_file(Filename = f"./uploads/{file_name}",Bucket = os.getenv("bucket") , Key = file_name)
+    except Exception as e:
+        print(e)
+        return False
+    
+    return True

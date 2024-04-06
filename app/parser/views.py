@@ -7,7 +7,7 @@ from .models import PDF
 #temporary method for unique ids for pdf storing
 import os
 import json
-from .utils import parse_pdf , text_splitter
+from .utils import parse_pdf , text_splitter , upload_pdf , get_presigned_url
 
 class UploadView(APIView):
     
@@ -26,13 +26,27 @@ class UploadView(APIView):
         
         if filename.split('.')[-1] != 'pdf':
             return Response(data = 'file uploaded is not pdf', status=status.HTTP_400_BAD_REQUEST)
-
-        file_id = PDF.objects.create(uploaded_by = request.user).id
-
-        with open(f"./uploads/{file_id}.pdf",'wb+') as save_file:
-            save_file.write(file.read())
         
-        return Response(data={"message" : "pdf saved" , "pdf_id" : file_id})
+
+        pdf = PDF.objects.create(uploaded_by = request.user , file_url = "")
+        
+        pdf_id = pdf.id
+        
+        with open(f"./uploads/{pdf_id}.pdf",'wb+') as save_file:
+            save_file.write(file.read())
+
+        response = upload_pdf(pdf_id)
+        
+        if not response:
+            return Response({"message" : "error while uploading to s3"} , status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        pdf_url = f'https://{os.getenv("bucket")}.s3.{os.getenv("region")}.amazonaws.com/{pdf_id}.pdf'
+
+        
+        pdf.file_url = pdf_url
+        pdf.save()
+
+        return Response(data={"message" : "pdf saved" , "pdf_id" : pdf_id , "pdf_url" : pdf_url})
     
     def delete(self , request , format = None):
                 
