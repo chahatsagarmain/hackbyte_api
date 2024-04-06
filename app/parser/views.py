@@ -93,7 +93,8 @@ class ParserView(APIView):
 
     def post(self , request , format = None):
         
-        pdf_id : str | None = json.loads(request.body).get("pdf_id",None)
+        pdf_id : str | None = request.data.get("pdf_id",None)
+        user = request.user
         
         if not pdf_id:
             return Response({"message" : "pdf id not provided"} , status=status.HTTP_404_NOT_FOUND)
@@ -104,7 +105,7 @@ class ParserView(APIView):
         
         try:
             raw_text : str = parse_pdf(pdf_id=pdf_id)
-            text_splitter(raw_text=raw_text)
+            text_splitter(raw_text=raw_text,user_id=user.id,pdf_id=pdf_id)
             
             return Response({"message" : "text parsed"})
         except Exception as e:
