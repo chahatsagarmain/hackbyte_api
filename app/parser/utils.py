@@ -1,60 +1,79 @@
 import pdfplumber
-# from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import boto3
 import os
 from botocore import client
-# from pydantic import BaseModel
-# from langchain_google_genai import GoogleGenerativeAIEmbeddings
-# from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain_community.vectorstores import Chroma
-# from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-# import torch
-# import google.generativeai as genai
+from pydantic import BaseModel
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.vectorstores import Chroma
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import torch
+import google.generativeai as genai
+from langchain_community.embeddings.sentence_transformer import (
+    SentenceTransformerEmbeddings,
+)
+from langchain.chains import RetrievalQA
+from  langchain_core.prompts import PromptTemplate
 
-# tokenizer = AutoTokenizer.from_pretrained("ProtectAI/deberta-v3-base-prompt-injection")
-# model = AutoModelForSequenceClassification.from_pretrained("ProtectAI/deberta-v3-base-prompt-injection")
 
-# classifier = pipeline(
-#   "text-classification",
-#   model=model,
-#   tokenizer=tokenizer,
-#   truncation=True,
-#   max_length=512,
-#   device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-# )
+tokenizer = AutoTokenizer.from_pretrained("ProtectAI/deberta-v3-base-prompt-injection")
+model = AutoModelForSequenceClassification.from_pretrained("ProtectAI/deberta-v3-base-prompt-injection")
 
-# genai.configure( api_key=os.getenv("GOOGLE_API_KEY"))
+classifier = pipeline(
+  "text-classification",
+  model=model,
+  tokenizer=tokenizer,
+  truncation=True,
+  max_length=512,
+  device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+)
+from optimum.onnxruntime import ORTModelForSequenceClassification
+from transformers import AutoTokenizer, pipeline
 
-# model = ChatGoogleGenerativeAI(model="gemini-pro",google_api_key=os.getenv("GOOGLE_API_KEY"),temperature=0.2,convert_system_message_to_human=True)
-# embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001",google_api_key=os.getenv("GOOGLE_API_KEY"))
 
-# expiration = 60 * 60 * 60 *60
+tokenizer = AutoTokenizer.from_pretrained("laiyer/unbiased-toxic-roberta-onnx")
+model = ORTModelForSequenceClassification.from_pretrained("laiyer/unbiased-toxic-roberta-onnx",file_name="model.onnx")
+toxic_classifier = pipeline(
+    task="text-classification",
+    model=model,
+    tokenizer=tokenizer,
+)
 
-# def parse_pdf(pdf_id : str) -> str:
+
+genai.configure( api_key=os.getenv("GOOGLE_API_KEY"))
+
+model = ChatGoogleGenerativeAI(model="gemini-pro",google_api_key=os.getenv("GOOGLE_API_KEY"),temperature=0.2,convert_system_message_to_human=True)
+
+expiration = 60 * 60 * 60 *60
+
+def parse_pdf(pdf_id : str) -> str:
     
-#     with pdfplumber.open(f"./uploads/{pdf_id}.pdf") as pdf:
-#         raw_text : str = ""
-#         for i in range(len(pdf.pages)):
-#             pages = pdf.pages[i]
-#             raw_text += pages.extract_text()
+    with pdfplumber.open(f"./uploads/{pdf_id}.pdf") as pdf:
+        raw_text : str = ""
+        for i in range(len(pdf.pages)):
+            pages = pdf.pages[i]
+            raw_text += pages.extract_text()
             
-#         if len(raw_text) == 0:
-#             raise ValueError("no data found")
+        if len(raw_text) == 0:
+            raise ValueError("no data found")
         
-#         return raw_text
+        return raw_text
         
 
-# def text_splitter(raw_text : str,user_id : str, pdf_id : str):
+def text_splitter(raw_text : str,user_id : str, pdf_id : str):
     
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000 , chunk_overlap = 0)
-#     splitted_text = text_splitter.split_text(raw_text)
-#     directory = f"./chroma_db/{user_id}/{pdf_id}"
-#     if not os.path.exists(directory):
-#         os.makedirs(directory, exist_ok=True)
-#     print(splitted_text)
-#     Chroma.from_texts(splitted_text, embeddings,persist_directory=directory).as_retriever()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000 , chunk_overlap = 0)
+    splitted_text = text_splitter.split_text(raw_text)
+    directory = f"./chroma_db/{user_id}/{pdf_id}"
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+    # create the open-source embedding function
+    embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+    Chroma.from_texts(splitted_text, embeddings,persist_directory=directory).as_retriever()
     
-#     return True
+    return True
+
 
 
 
@@ -89,3 +108,22 @@ def upload_pdf(file_id):
         return False
     
     return True
+
+def response_from_pdf(question:str,user_id:str,pdf_id: str,toxic_check: bool):
+    if classifier( question)[0]['label']=="INJECTION":
+        return {"response":"prompt_injection"}
+    if toxic_check:
+        if toxic_classifier(question)[0]['score']>=0.6:
+          return {"response":"toxic_prompt"}
+    directory = f"./chroma_db/{user_id}/{pdf_id}"
+    embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+    vector_index = Chroma(persist_directory=directory, embedding_function=embeddings).as_retriever()
+    template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer. Keep the answer as concise as possible. Always say "thanks for asking!" at the end of the answer.
+    {context}
+    Question: {question}
+    Helpful Answer:"""
+    QA_CHAIN_PROMPT = PromptTemplate.from_template(template)# Run chain
+    qa_chain = RetrievalQA.from_chain_type(model,retriever=vector_index,return_source_documents=True,chain_type_kwargs={"prompt": QA_CHAIN_PROMPT})
+   
+    result = qa_chain({"query": question})
+    return {"response": result["result"]}
