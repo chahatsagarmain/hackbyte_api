@@ -4,6 +4,8 @@ from rest_framework.parsers import FormParser , MultiPartParser
 from rest_framework.response import Response
 from rest_framework import status
 from .models import PDF
+from .serializers import PDFserializer
+
 #temporary method for unique ids for pdf storing
 import os
 import json
@@ -59,7 +61,7 @@ class UploadView(APIView):
             return Response({"message" : "pdf does not exist"} , status=status.HTTP_404_NOT_FOUND)
         
         pdf = PDF.objects.get(id = pdf_id)
-        
+                
         if not pdf :
             return Response({"message" : "no pdf with this id "} , status=status.HTTP_404_NOT_FOUND)
         
@@ -70,6 +72,21 @@ class UploadView(APIView):
         return Response({"message" : "pdf deleted"})        
         
         
+class PDFView(APIView):
+    
+    def get(self , request , format = None):
+        
+        pdf_id : str | None = request.data.get("pdf_id",None)
+        
+        if not pdf_id:
+            return Response({"message" : "pdf id not provided"} , status=status.HTTP_404_NOT_FOUND)
+        
+        data = PDF.objects.filter(id = pdf_id)[0]
+        
+        serialized_data = PDFserializer(data)
+        
+        return Response({"data" : serialized_data.data})
+
 class ParserView(APIView):
 
     permission_classes = [IsAuthenticated]

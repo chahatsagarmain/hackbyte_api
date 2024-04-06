@@ -16,12 +16,14 @@ class ChatView(APIView):
         decoded_body = request.data
         
         user = request.user
-        chat_session_id : str | None = decoded_body.get("chat_session_id",None)
-        pdf_id : str | None = decoded_body.get("pdf_id",None)
+        chat_session_id : int | None = decoded_body.get("chat_session_id",None)
+        pdf_id : int | None = decoded_body.get("pdf_id",None)
         message : str = decoded_body.get("message","")
         
         if not pdf_id:
             return Response({"message" : "pdf_id not found"} )
+        
+        print(chat_session_id)
         
         #creating a new chatsession
         if not chat_session_id:
@@ -32,7 +34,7 @@ class ChatView(APIView):
             chat = Chat.objects.create(message = response , session = chat_session)
             serialzed_chat = ChatSessionSerializer(chat_session)
             print(serialzed_chat.data)
-            return Response({"response" : response})
+            return Response({"response" : response , "session" : chat_session_id})
         
         chat_session = ChatSession.objects.get(id=chat_session_id)
         chat = Chat.objects.create(message=message, session=chat_session)
@@ -40,7 +42,7 @@ class ChatView(APIView):
         chat = Chat.objects.create(message=response, session=chat_session)
         serialized_chat = ChatSessionSerializer(chat_session)
         print(serialized_chat.data)
-        return Response({"response" : response})
+        return Response({"response" : response , "session" : chat_session_id})
 
 class ChatSessionView(APIView):
     
