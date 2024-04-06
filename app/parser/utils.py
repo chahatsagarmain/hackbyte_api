@@ -51,6 +51,7 @@ def text_splitter(raw_text : str,user_id : str, pdf_id : str):
     directory = f"./chroma_db/{user_id}/{pdf_id}"
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True)
+    print(splitted_text)
     Chroma.from_texts(splitted_text, embeddings,persist_directory=directory).as_retriever()
     
     return True
