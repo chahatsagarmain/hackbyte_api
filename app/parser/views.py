@@ -85,7 +85,7 @@ class PDFView(APIView):
         
         serialized_data = PDFserializer(data)
         
-        return Response({"data" : serialized_data.data})
+        return Response(serialized_data.data)
 
 class ParserView(APIView):
 

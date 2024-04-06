@@ -34,7 +34,7 @@ class ChatView(APIView):
             chat = Chat.objects.create(message = response , session = chat_session)
             serialzed_chat = ChatSessionSerializer(chat_session)
             print(serialzed_chat.data)
-            return Response({"response" : response , "session" : chat_session_id})
+            return Response({"response" : response , "session" : chat_session.id})
         
         chat_session = ChatSession.objects.get(id=chat_session_id)
         chat = Chat.objects.create(message=message, session=chat_session)
