@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/',include("parser.urls")),
     path('api/v1/',include("authentication_app.urls")),
-    path('api/v1/',include("crud.urls"))
+    path('api/v1/',include("crud.urls")),
+    path('api/v1/',include("chat.urls"))
 ]

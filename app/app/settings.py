@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'parser',
     'authentication_app',
-    'crud'
+    'crud',
+    'chat'
 ]
 
 MIDDLEWARE = [
