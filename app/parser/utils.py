@@ -131,10 +131,9 @@ def response_from_pdf(question:str,user_id:str,pdf_id: str,toxic_check: bool):
     result = qa_chain({"query": question})
     return {"response": result["result"]}
 
-def send_raw_text( pdf_id : str, user_id : str):
-    
+def send_raw_text(pdf_id: str, user_id: str):
     raw_text = parse_pdf(pdf_id)
-    print("2")
+    
     data = {
         "pdf_id" : pdf_id,
         "text" : str(raw_text),
@@ -146,8 +145,7 @@ def send_raw_text( pdf_id : str, user_id : str):
         # Add any other headers that you need
     }
     
-    conn = http.client.HTTPSConnection("fb16-14-139-241-214.ngrok-free.app")
-    conn.request("POST", "/upload", body=json.dumps(data), headers=headers)
+    response = requests.post('http://localhost:7000/', json=data, headers=headers)
     
-    response = conn.getresponse()
-    print(response.status)
+    print(response.status_code)
+    print(response.text)
