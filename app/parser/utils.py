@@ -9,10 +9,13 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.vectorstores import Chroma
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 import torch
+import json
 import google.generativeai as genai
 from langchain_community.embeddings.sentence_transformer import (
     SentenceTransformerEmbeddings,
 )
+import http.client
+import requests
 from langchain.chains import RetrievalQA
 from  langchain_core.prompts import PromptTemplate
 
@@ -110,8 +113,8 @@ def upload_pdf(file_id):
     return True
 
 def response_from_pdf(question:str,user_id:str,pdf_id: str,toxic_check: bool):
-    if classifier( question)[0]['label']=="INJECTION":
-        return {"response":"prompt_injection"}
+    # if classifier( question)[0]['label']=="INJECTION":
+    #     return {"response":"prompt_injection"}
     if toxic_check:
         if toxic_classifier(question)[0]['score']>=0.6:
           return {"response":"toxic_prompt"}
@@ -127,3 +130,24 @@ def response_from_pdf(question:str,user_id:str,pdf_id: str,toxic_check: bool):
    
     result = qa_chain({"query": question})
     return {"response": result["result"]}
+
+def send_raw_text( pdf_id : str, user_id : str):
+    
+    raw_text = parse_pdf(pdf_id)
+    print("2")
+    data = {
+        "pdf_id" : pdf_id,
+        "text" : str(raw_text),
+        "user_id" : user_id
+    }
+    
+    headers = {
+        "Content-Type": "application/json",
+        # Add any other headers that you need
+    }
+    
+    conn = http.client.HTTPSConnection("fb16-14-139-241-214.ngrok-free.app")
+    conn.request("POST", "/upload", body=json.dumps(data), headers=headers)
+    
+    response = conn.getresponse()
+    print(response.status)

@@ -9,7 +9,7 @@ class UserView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
-    def get(self, request, format=None):
+    def post(self, request, format=None):
         user = request.user
         serialized_user = UserSerializer(user)
         return Response({"user": serialized_user.data}, status=status.HTTP_200_OK)

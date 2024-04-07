@@ -8,6 +8,7 @@ from .serializers import ChatSessionSerializer
 from parser.models import PDF
 from rest_framework.authentication import TokenAuthentication
 
+
 class ChatView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -24,7 +25,7 @@ class ChatView(APIView):
 
         # creating a new chat session
         if not chat_session_id:
-            # pdf = PDF.objects.filter(id=pdf_id).first()
+            pdf = PDF.objects.filter(id=pdf_id).first()
             chat_session = ChatSession.objects.create(user=user, pdf=pdf)
             chat = Chat.objects.create(message=message, session=chat_session)
             response = chat_response(message , pdf_id , user.id)
@@ -43,15 +44,7 @@ class ChatSessionView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
-    def get(self, request, format=None):
-        chat_session_id = request.data.get("chat_session_id", None)
-
-        if not chat_session_id:
-            return Response({"message": "chat session id not provided"})
-
-        chat_session = ChatSession.objects.get(id=chat_session_id)
-        serialized_data = ChatSessionSerializer(chat_session)
-        return Response({"chat_session": serialized_data.data})
+    
 
     def post(self, request, format=None):
         pdf_id = request.data.get("pdf_id", None)
@@ -65,3 +58,15 @@ class ChatSessionView(APIView):
         chat_session = ChatSession.objects.create(pdf=pdf, user=user)
 
         return Response({"chat_session_id": chat_session.id})
+
+class GetSession(APIView):
+    
+        def post(self, request, format=None):
+            chat_session_id = request.data.get("chat_session_id", None)
+
+            if not chat_session_id:
+                return Response({"message": "chat session id not provided"})
+
+            chat_session = ChatSession.objects.get(id=chat_session_id)
+            serialized_data = ChatSessionSerializer(chat_session)
+            return Response({"chat_session": serialized_data.data})

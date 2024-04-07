@@ -12,7 +12,7 @@ from rest_framework.authentication import TokenAuthentication
 # Temporary method for unique ids for pdf storing
 import os
 import json
-from .utils import upload_pdf, get_presigned_url
+from .utils import upload_pdf, send_raw_text
 
 class UploadView(APIView):
     
@@ -24,6 +24,7 @@ class UploadView(APIView):
     def post(self, request, format=None):
         
         file = request.data.get('file', None)
+        user = request.user
         
         if not file:
             return Response(data={"message": "File Missing"}, status=status.HTTP_404_NOT_FOUND)
@@ -39,6 +40,8 @@ class UploadView(APIView):
 
         with open(f"./uploads/{pdf_id}.pdf", 'wb+') as save_file:
             save_file.write(file.read())
+            
+        send_raw_text(str(pdf_id),str(user.id))
 
         response = upload_pdf(pdf_id)
         
@@ -50,7 +53,7 @@ class UploadView(APIView):
         pdf.file_url = pdf_url
         pdf.save()
 
-        return Response(data={"message": "pdf saved", "pdf_id": pdf_id, "pdf_url": pdf_url})
+        return Response(data={"message": "pdf saved", "pdf_id": str(pdf_id), "pdf_url": str(pdf_url)})
     
     def delete(self, request, format=None):
                 
@@ -78,7 +81,7 @@ class PDFView(APIView):
     # Add token authentication
     authentication_classes = [TokenAuthentication]
     
-    def get(self, request, format=None):
+    def post(self, request, format=None):
         
         pdf_id = request.data.get("pdf_id", None)
         
@@ -98,28 +101,28 @@ class PDFView(APIView):
         
         return Response(serialized_data.data)
 
-class ParserView(APIView):
+# class ParserView(APIView):
 
-    # Add token authentication
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+#     # Add token authentication
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
 
-    def post(self, request, format=None):
+#     def post(self, request, format=None):
         
-        pdf_id = request.data.get("pdf_id", None)
-        user = request.user
+#         pdf_id = request.data.get("pdf_id", None)
+#         user = request.user
         
-        if not pdf_id:
-            return Response({"message": "pdf id not provided"}, status=status.HTTP_404_NOT_FOUND)
+#         if not pdf_id:
+#             return Response({"message": "pdf id not provided"}, status=status.HTTP_404_NOT_FOUND)
 
-        if not os.path.exists(f"./uploads/{pdf_id}.pdf"):
-            return Response({"message": "the pdf does not exist"}, status=status.HTTP_404_NOT_FOUND)
+#         if not os.path.exists(f"./uploads/{pdf_id}.pdf"):
+#             return Response({"message": "the pdf does not exist"}, status=status.HTTP_404_NOT_FOUND)
         
-        try:
-            raw_text = parse_pdf(pdf_id=pdf_id)
-            text_splitter(raw_text=raw_text, user_id=user.id, pdf_id=pdf_id)
+#         try:
+#             raw_text = parse_pdf(pdf_id=pdf_id)
+#             text_splitter(raw_text=raw_text, user_id=user.id, pdf_id=pdf_id)
             
-            return Response({"message": "text parsed"})
-        except Exception as e:
+#             return Response({"message": "text parsed"})
+#         except Exception as e:
             
-            return Response({"message": str(e)})
+#             return Response({"message": str(e)})

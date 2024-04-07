@@ -1,10 +1,22 @@
 from parser.utils import parse_pdf , text_splitter , response_from_pdf
+import requests
 
-def chat_response(message , pdf_id, user_id):
+def chat_response(message : str , pdf_id : str, user_id : str):
     
     raw_text = parse_pdf(pdf_id)
     
-    if not text_splitter(raw_text,user_id,pdf_id):
-        return None
+    data = {
+        "query" : message,
+        "pdf_id" : pdf_id,
+        "user_id" : user_id,
+        "toxic_check" : True
+    }
+    response = requests.post("https://fb16-14-139-241-214.ngrok-free.app/qna",json=data)
     
-    return response_from_pdf(message , user_id , pdf_id , True)
+    print(response)
+    
+    return response.json()
+    
+    
+    
+    
