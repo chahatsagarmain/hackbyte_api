@@ -29,17 +29,18 @@ class ChatView(APIView):
             chat_session = ChatSession.objects.create(user=user, pdf=pdf)
             chat = Chat.objects.create(message=message, session=chat_session)
             # response = chat_response(message , pdf_id , user.id)
-            response = " "
+            response = chat_response(message=message , user_id= str(user.id) , pdf_id=pdf_id)
             chat = Chat.objects.create(message=response, session=chat_session)
             serialized_chat = ChatSessionSerializer(chat_session)
-            return Response({"response": response, "session": chat_session.id})
+            return Response({"response": response['response']['response'], "session": chat_session.id})
 
         chat_session = ChatSession.objects.get(id=chat_session_id)
         chat = Chat.objects.create(message=message, session=chat_session)
         response = chat_response(message=message , user_id= str(user.id) , pdf_id=pdf_id)
         chat = Chat.objects.create(message=response['response']['response'], session=chat_session)
         serialized_chat = ChatSessionSerializer(chat_session)
-        return Response({"response": response, "session": chat_session_id})
+        print(response['response']['response'])
+        return Response({"response": response['response']['response'], "session": chat_session_id})
 
 class ChatSessionView(APIView):
     authentication_classes = [TokenAuthentication]
